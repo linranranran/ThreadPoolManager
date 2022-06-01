@@ -10,10 +10,13 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>thread-pool-manager-core</module>
+        <module>thread-pool-manager-stater</module>
     </modules>
     <packaging>pom</packaging>
 
     <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <lombok.version>1.18.16</lombok.version>
         <hutool.version>5.7.0</hutool.version>
         <slf4j.version>1.7.25</slf4j.version>
