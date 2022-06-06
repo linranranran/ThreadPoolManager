@@ -42,15 +42,38 @@ public class ThreadPoolHolder {
 
     /** 保存线程池实例 */
     private Map<String , ThreadPoolExecutor> threadPoolMap = null;
-    /** 保存线程任务编号 */
-//    private Map<String , AtomicLong> taskNums = null;
+
+    /** 全局设置，如果找不到对应的设置则取ThreadPoolConstant中的默认值 */
+    private Map<String , String> globalSet = null;
+
+    /** 全局默认线程池名称，如有设置则优先使用 */
+    private String defaultPoolName = ThreadPoolConstant.DEFAULT_POOL_NAME;
+
+    /** 工作模式，false:全默认工作模式，true:自定义全局设置模式 */
+    private boolean workMode = false;
 
     public ThreadPoolHolder(){
         threadPoolMap = new ConcurrentHashMap<>();
-//        taskNums = new ConcurrentHashMap<>();
-//        taskNums.put(ThreadPoolConstant.DEFAULT_POOL_NAME , new AtomicLong(0));
         ThreadPoolFactory factory = new DefaultThreadPoolFactory();
         threadPoolMap.put(ThreadPoolConstant.DEFAULT_POOL_NAME , factory.createBasicThreadPoolInstance(ThreadPoolConstant.DEFAULT_POOL_NAME));
+    }
+
+    /**
+     * 传入自定义全局设置Map，并会修改工作模式为ture，会优先获取自定义设置。
+     * */
+    public ThreadPoolHolder(Map<String , String> globalSet){
+        this.globalSet = globalSet;
+        workMode = true;
+        threadPoolMap = new ConcurrentHashMap<>();
+        String defaultName = ThreadPoolConstant.DEFAULT_POOL_NAME;
+        String setDefaultName = globalSet.getOrDefault("defaultPoolName" , null);
+        if( setDefaultName != null && !"".equals(setDefaultName)){
+            defaultName = setDefaultName;
+        }
+        //defaultName最起码也是一个默认值
+        this.defaultPoolName = defaultName;
+        ThreadPoolFactory factory = new DefaultThreadPoolFactory();
+        threadPoolMap.put( defaultName , factory.createBasicThreadPoolInstance(defaultName));
     }
 
     /**
@@ -148,7 +171,7 @@ public class ThreadPoolHolder {
      * @return 任务编号
      * */
     public long executeTask(Runnable runnable){
-        return executeTask(ThreadPoolConstant.DEFAULT_POOL_NAME , runnable);
+        return executeTask(this.defaultPoolName , runnable);
     }
 
     /**
