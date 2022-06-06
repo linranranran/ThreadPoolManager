@@ -11,6 +11,7 @@
     <modules>
         <module>thread-pool-manager-core</module>
         <module>thread-pool-manager-stater</module>
+        <module>thread-pool-manager-test</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -20,6 +21,7 @@
         <lombok.version>1.18.16</lombok.version>
         <hutool.version>5.7.0</hutool.version>
         <slf4j.version>1.7.25</slf4j.version>
+        <spring.version>2.4.3</spring.version>
     </properties>
 
     <dependencies>

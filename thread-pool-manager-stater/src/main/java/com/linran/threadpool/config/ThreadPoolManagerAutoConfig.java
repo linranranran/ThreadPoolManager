@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -22,6 +23,10 @@ public class ThreadPoolManagerAutoConfig {
     public ThreadPoolManager getThreadPoolManager(ThreadPoolManagerProperties properties){
         String defaultName = properties.getDefaultPoolName();
         Map<String, String> globalSet = properties.getGlobalSet();
+        //避免只设置了默认线程池名称而没设置全局设置而报错
+        if(globalSet == null){
+            globalSet = new HashMap<>();
+        }
         if(!StrUtil.isEmpty(defaultName)){
             globalSet.put("defaultPoolName" , defaultName);
         }

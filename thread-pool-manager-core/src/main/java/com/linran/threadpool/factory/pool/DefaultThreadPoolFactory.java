@@ -21,7 +21,7 @@ public class DefaultThreadPoolFactory implements ThreadPoolFactory{
                 ThreadPoolConstant.DEFAULT_POOL_THREAD_KEEP_ALIVE_TIME,
                 ThreadPoolConstant.DEFAULT_POOL_THREAD_KEEP_ALIVE_TIME_UNIT,
                 new LinkedBlockingDeque<>(ThreadPoolConstant.DEFAULT_POOL_THREAD_QUEUE_SIZE),
-                new DefaultThreadFactory());
+                new DefaultThreadFactory(poolName));
         defaultPool.setName(poolName);
         return defaultPool;
     }
