@@ -1,5 +1,8 @@
 #线程池相关
 linran:
   default-pool-name: linran
+#  global-set:
+#    main-size: 30
+
 
 

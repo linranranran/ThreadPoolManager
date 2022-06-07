@@ -1,4 +1,4 @@
-package com.linran.threadpool.properties;
+package com.linran.threadpool.config;
 
 import lombok.Data;
 
@@ -9,6 +9,8 @@ import lombok.Data;
  */
 @Data
 public class ThreadPoolProperties {
+
+    private String poolName;
 
     private Integer mainSize;
 

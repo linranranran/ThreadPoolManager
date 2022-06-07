@@ -21,17 +21,18 @@ public class ThreadPoolManagerAutoConfig {
 
     @Bean
     public ThreadPoolManager getThreadPoolManager(ThreadPoolManagerProperties properties){
+        //start create default pool
         String defaultName = properties.getDefaultPoolName();
-        Map<String, String> globalSet = properties.getGlobalSet();
+        ThreadPoolProperties globalSet = properties.getGlobalSet();
         //避免只设置了默认线程池名称而没设置全局设置而报错
         if(globalSet == null){
-            globalSet = new HashMap<>();
+            globalSet = new ThreadPoolProperties();
         }
         if(!StrUtil.isEmpty(defaultName)){
-            globalSet.put("defaultPoolName" , defaultName);
+            globalSet.setPoolName(defaultName);
         }
         ThreadPoolHolder holder = null;
-        if(globalSet != null && globalSet.size() != 0){
+        if(globalSet != null){
             holder = new ThreadPoolHolder(globalSet);
         }else{
             holder = new ThreadPoolHolder();

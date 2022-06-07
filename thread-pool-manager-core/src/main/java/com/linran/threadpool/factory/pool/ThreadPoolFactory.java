@@ -1,5 +1,7 @@
 package com.linran.threadpool.factory.pool;
 
+import com.linran.threadpool.config.ThreadPoolProperties;
+
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
