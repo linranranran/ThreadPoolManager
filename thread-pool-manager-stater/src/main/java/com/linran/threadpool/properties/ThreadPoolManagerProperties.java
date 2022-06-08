@@ -1,6 +1,6 @@
 package com.linran.threadpool.properties;
 
-import com.linran.threadpool.config.ThreadPoolProperties;
+import com.linran.threadpool.config.ThreadPoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -48,10 +48,36 @@ import java.util.Map;
 @Data
 public class ThreadPoolManagerProperties {
 
+    /**
+     * 默认线程池名称
+     * */
     private String defaultPoolName;
 
-    private ThreadPoolProperties globalSet;
+    /**
+     *  全局线程池参数设置
+     *      main-size:
+     *      max-size:
+     *      alive-time:
+     *      time-util:
+     *      queue-type:
+     *      queue-size:
+     *      thread-factory:
+     *      reject-handler:
+     * */
+    private ThreadPoolConfig globalSet;
 
-
+    /**
+     * 申明其它线程池，default为关键字，指默认线程池，而默认线程池的线程池名可以通过defaultPoolName设置。
+     * -- 申明"xxx"线程池
+     *    xxxx:
+     *      ....
+     *      ....
+     *
+     *    -- 申明"aaa"和"bbb"两个线程池，并且共用同一个参数设置。
+     *    aaa,bbb:
+     *      ....
+     *      ....
+     * */
+    private Map<String , ThreadPoolConfig> pools;
 
 }

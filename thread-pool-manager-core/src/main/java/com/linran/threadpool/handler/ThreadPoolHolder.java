@@ -1,10 +1,11 @@
 package com.linran.threadpool.handler;
 
 import cn.hutool.core.util.StrUtil;
-import com.linran.threadpool.config.ThreadPoolProperties;
+import com.linran.threadpool.config.ThreadPoolConfig;
 import com.linran.threadpool.constant.ThreadPoolAddType;
 import com.linran.threadpool.constant.ThreadPoolConstant;
 import com.linran.threadpool.exception.ThreadPoolNameNullException;
+import com.linran.threadpool.exception.ThreadPoolNotFoundException;
 import com.linran.threadpool.factory.pool.AbstractThreadPoolExecutor;
 import com.linran.threadpool.factory.pool.DefaultThreadPoolFactory;
 import com.linran.threadpool.factory.pool.ThreadPoolFactory;
@@ -45,7 +46,7 @@ public class ThreadPoolHolder {
     private Map<String , ThreadPoolExecutor> threadPoolMap = null;
 
     /** 全局设置，如果找不到对应的设置则取ThreadPoolConstant中的默认值 */
-    private ThreadPoolProperties globalSet = null;
+    private ThreadPoolConfig globalSet = null;
 
     /** 全局默认线程池名称，如有设置则优先使用 */
     private String defaultPoolName = ThreadPoolConstant.DEFAULT_POOL_NAME;
@@ -54,15 +55,33 @@ public class ThreadPoolHolder {
     private boolean workMode = false;
 
     public ThreadPoolHolder(){
+        defaultPoolName = ThreadPoolConstant.DEFAULT_POOL_NAME;
         threadPoolMap = new ConcurrentHashMap<>();
-        ThreadPoolFactory factory = new DefaultThreadPoolFactory();
-        threadPoolMap.put(ThreadPoolConstant.DEFAULT_POOL_NAME , factory.createBasicThreadPoolInstance(ThreadPoolConstant.DEFAULT_POOL_NAME));
+        ThreadPoolFactory factory = new DefaultThreadPoolFactory(ThreadPoolConstant.DEFAULT_POOL_NAME);
+        threadPoolMap.put(ThreadPoolConstant.DEFAULT_POOL_NAME , factory.createBasicThreadPoolInstance());
     }
 
     /**
      * 传入自定义全局设置Map，并会修改工作模式为ture，会优先获取自定义设置。
      * */
-    public ThreadPoolHolder(ThreadPoolProperties globalSet){
+    public ThreadPoolHolder(ThreadPoolConfig globalSet){
+        init(globalSet , true);
+    }
+
+
+    /**
+     * 传入自定义全局设置Map，并会修改工作模式为ture，会优先获取自定义设置。
+     * @param globalSet 全局设置
+     * @param isCreateDefault 是否初始化默认线程池,true表示默认创建，false表示不需要
+     * */
+    public ThreadPoolHolder(ThreadPoolConfig globalSet , boolean isCreateDefault){
+        init(globalSet , isCreateDefault);
+    }
+
+    /**
+     * 初始化方法
+     * */
+    public void init(ThreadPoolConfig globalSet , boolean isCreateDefault){
         this.globalSet = globalSet;
         workMode = true;
         threadPoolMap = new ConcurrentHashMap<>();
@@ -73,8 +92,22 @@ public class ThreadPoolHolder {
         }
         //defaultName最起码也是一个默认值
         this.defaultPoolName = defaultName;
-        ThreadPoolFactory factory = new DefaultThreadPoolFactory(globalSet);
-        threadPoolMap.put( defaultName , factory.createBasicThreadPoolInstance(defaultName));
+        if(isCreateDefault){
+            ThreadPoolFactory factory = new DefaultThreadPoolFactory(this.defaultPoolName);
+            addThreadPool( defaultName , factory);
+        }
+    }
+
+    /**
+     *  将线程池放入Map中，默认以如果name已存在则抛弃实例的方式添加
+     * @param poolName  线程池名称
+     * @param factory   线程池工厂
+     * */
+    public void addThreadPool(String poolName , ThreadPoolFactory factory){
+        if(StrUtil.isEmpty(poolName)){
+            throw new ThreadPoolNameNullException();
+        }
+        addThreadPool(poolName , factory.createBasicThreadPoolInstance() , ThreadPoolAddType.ABANDON_IF_EXIST);
     }
 
     /**
@@ -184,6 +217,9 @@ public class ThreadPoolHolder {
     public long executeTask(String poolName , Runnable runnable){
         if( !threadPoolMap.containsKey(poolName) || threadPoolMap.get(poolName) == null){
             throw new ThreadPoolNameNullException("ThreadPoolName can not be null!");
+        }
+        if(threadPoolMap == null || !threadPoolMap.containsKey(poolName) ){
+            throw new ThreadPoolNotFoundException("ThreadPool not found!");
         }
         threadPoolMap.get(poolName).execute(runnable);
 //        return taskNums.get(poolName).getAndIncrement();

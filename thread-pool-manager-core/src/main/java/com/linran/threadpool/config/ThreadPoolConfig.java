@@ -8,20 +8,20 @@ import lombok.Data;
  * @Date 2022/6/6
  */
 @Data
-public class ThreadPoolProperties {
+public class ThreadPoolConfig {
 
     private String poolName;
 
-    private Integer mainSize;
+    private Integer coreSize;
 
     private Integer maxSize;
 
-    private Integer aliveTime;
+    private Long aliveTime;
 
-    /** 时间单位 0毫秒，1秒 */
+    /** 时间单位 -2纳秒 -1微秒 0毫秒 1秒 2分钟 3小时 4天 */
     private Integer timeType;
 
-    /** 队列类型 0LinkedQueue 1ArrayQueue*/
+    /** 队列类型 0LinkedDeque 1ArrayQueue*/
     private Integer queueType;
 
     private Integer queueSize;

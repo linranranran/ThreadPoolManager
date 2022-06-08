@@ -50,7 +50,7 @@ public class ThreadPoolManager {
      * @param factory
      * */
     public void addPoolInstance(String poolName , ThreadPoolFactory factory){
-        holder.addThreadPool(poolName ,factory.createBasicThreadPoolInstance(poolName));
+        holder.addThreadPool(poolName ,factory.createBasicThreadPoolInstance());
     }
 
     /**

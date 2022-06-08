@@ -1,7 +1,5 @@
 package com.linran.threadpool.factory.pool;
 
-import com.linran.threadpool.config.ThreadPoolProperties;
-
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -10,6 +8,6 @@ import java.util.concurrent.ThreadPoolExecutor;
  **/
 public interface ThreadPoolFactory {
 
-    public ThreadPoolExecutor createBasicThreadPoolInstance(String poolName);
+    public ThreadPoolExecutor createBasicThreadPoolInstance();
 
 }
