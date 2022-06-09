@@ -2,9 +2,9 @@
 linran:
   default-pool-name: linran
   global-set:
-    main-size: 30
-
+    core-size: 10
   pools:
-    linran:
-      main-size: 30
-
+    linran2:
+      max-size: 50
+    linran1:
+      core-size: 10

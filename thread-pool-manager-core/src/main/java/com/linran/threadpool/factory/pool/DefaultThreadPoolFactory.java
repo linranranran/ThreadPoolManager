@@ -25,6 +25,8 @@ public class DefaultThreadPoolFactory implements ThreadPoolFactory{
             throw new ThreadPoolNameNullException("ThreadPool name can not be null!");
         }
         this.poolName = name;
+        //赋予一个空config，避免null指针
+        this.config = new ThreadPoolConfig();
     }
 
     public DefaultThreadPoolFactory(ThreadPoolConfig set){

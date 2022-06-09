@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
+import java.util.Set;
 
 /**
  * @Author LinRan
@@ -59,6 +60,9 @@ public class ThreadPoolTest {
 
             threadPoolManager.execute(runnable);
         }
+
+        Set<String> nameSet = threadPoolManager.getThreadPoolNameSet();
+        System.out.println(nameSet);
 
     }
 

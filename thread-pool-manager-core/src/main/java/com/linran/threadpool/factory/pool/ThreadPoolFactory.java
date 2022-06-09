@@ -10,4 +10,6 @@ public interface ThreadPoolFactory {
 
     public ThreadPoolExecutor createBasicThreadPoolInstance();
 
+    public String getPoolName();
+
 }

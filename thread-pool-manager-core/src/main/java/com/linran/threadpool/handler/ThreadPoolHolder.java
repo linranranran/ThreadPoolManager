@@ -55,10 +55,12 @@ public class ThreadPoolHolder {
     private boolean workMode = false;
 
     public ThreadPoolHolder(){
-        defaultPoolName = ThreadPoolConstant.DEFAULT_POOL_NAME;
+/*        defaultPoolName = ThreadPoolConstant.DEFAULT_POOL_NAME;
         threadPoolMap = new ConcurrentHashMap<>();
         ThreadPoolFactory factory = new DefaultThreadPoolFactory(ThreadPoolConstant.DEFAULT_POOL_NAME);
-        threadPoolMap.put(ThreadPoolConstant.DEFAULT_POOL_NAME , factory.createBasicThreadPoolInstance());
+        threadPoolMap.put(ThreadPoolConstant.DEFAULT_POOL_NAME , factory.createBasicThreadPoolInstance());*/
+        //统一使用init初始化方法
+        init(null , true);
     }
 
     /**
@@ -80,6 +82,8 @@ public class ThreadPoolHolder {
 
     /**
      * 初始化方法
+     * @param   globalSet
+     * @param   isCreateDefault 是否初始化默认子流程，用于stater批量创建线程池
      * */
     public void init(ThreadPoolConfig globalSet , boolean isCreateDefault){
         this.globalSet = globalSet;
@@ -96,6 +100,18 @@ public class ThreadPoolHolder {
             ThreadPoolFactory factory = new DefaultThreadPoolFactory(this.defaultPoolName);
             addThreadPool( defaultName , factory);
         }
+    }
+
+    /**
+     *  将线程池放入Map中，默认以如果name已存在则抛弃实例的方式添加
+     *  factory中poolName参数不能为空
+     * @param factory   线程池工厂
+     * */
+    public void addThreadPool(ThreadPoolFactory factory){
+        if(factory == null || StrUtil.isEmpty(factory.getPoolName())){
+            throw new ThreadPoolNameNullException();
+        }
+        addThreadPool(factory.getPoolName() , factory.createBasicThreadPoolInstance() , ThreadPoolAddType.ABANDON_IF_EXIST);
     }
 
     /**
@@ -215,7 +231,7 @@ public class ThreadPoolHolder {
      * @return 任务编号
      * */
     public long executeTask(String poolName , Runnable runnable){
-        if( !threadPoolMap.containsKey(poolName) || threadPoolMap.get(poolName) == null){
+        if( poolName == null || StrUtil.isEmpty(poolName )){
             throw new ThreadPoolNameNullException("ThreadPoolName can not be null!");
         }
         if(threadPoolMap == null || !threadPoolMap.containsKey(poolName) ){
