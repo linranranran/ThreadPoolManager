@@ -8,8 +8,16 @@ import java.util.concurrent.ThreadPoolExecutor;
  **/
 public interface ThreadPoolFactory {
 
+    /**
+     * 创建线程池实例
+     * @return  ThreadPoolExecutor
+     * */
     public ThreadPoolExecutor createBasicThreadPoolInstance();
 
+    /**
+     * 返回要创建的线程池名称
+     * @return  poolName
+     * */
     public String getPoolName();
 
 }

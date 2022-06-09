@@ -1,5 +1,6 @@
 package com.linran.threadpool.factory.pool;
 
+import cn.hutool.core.util.StrUtil;
 import com.linran.threadpool.config.ThreadPoolConfig;
 import com.linran.threadpool.constant.ThreadPoolConstant;
 import com.linran.threadpool.exception.ThreadPoolConfigException;
@@ -20,6 +21,10 @@ public class DefaultThreadPoolFactory implements ThreadPoolFactory{
     /** 线程池相关参数设置 */
     private ThreadPoolConfig config;
 
+    /**
+     * 仅设置poolName,其余设置均取默认值
+     * @param   name
+     * */
     public DefaultThreadPoolFactory(String name){
         if(name == null || "".equals(name)){
             throw new ThreadPoolNameNullException("ThreadPool name can not be null!");
@@ -29,11 +34,16 @@ public class DefaultThreadPoolFactory implements ThreadPoolFactory{
         this.config = new ThreadPoolConfig();
     }
 
+    /**
+     * 提供ThreadPoolConfig手动设置
+     * 注意：需手动设置Config中的name字段，否则取默认值。
+     * @param   set
+     * */
     public DefaultThreadPoolFactory(ThreadPoolConfig set){
         if(set == null || set.getPoolName() == null || "".equals(set.getPoolName())){
             throw new ThreadPoolNameNullException("ThreadPool name or config can not be null!");
         }
-        this.poolName = set.getPoolName();
+        this.poolName = StrUtil.isEmpty(set.getPoolName()) ? poolName : set.getPoolName();
         this.config = set;
     }
 
