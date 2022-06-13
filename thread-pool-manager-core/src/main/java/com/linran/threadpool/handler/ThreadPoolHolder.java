@@ -10,12 +10,12 @@ import com.linran.threadpool.factory.pool.AbstractThreadPoolExecutor;
 import com.linran.threadpool.factory.pool.DefaultThreadPoolFactory;
 import com.linran.threadpool.factory.pool.ThreadPoolFactory;
 import com.linran.threadpool.factory.pool.ThreadPoolParameter;
+import com.linran.threadpool.interceptor.ThreadPoolInterceptor;
 import com.linran.threadpool.task.AbstractRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -266,6 +266,9 @@ public class ThreadPoolHolder {
      *  @return set
      * */
     public Set<String> getThreadPoolNameSet(){
+        if(threadPoolMap == null || threadPoolMap.size() == 0){
+            throw new ThreadPoolNotFoundException("No ThreadPool !");
+        }
         return threadPoolMap.keySet();
     }
 
@@ -325,6 +328,83 @@ public class ThreadPoolHolder {
     public void shutDownThreadPool(String poolName){
         log.info(poolName + " shutdown , current active Thread : "+threadPoolMap.get(poolName).getActiveCount()+"");
         threadPoolMap.get(poolName).shutdown();
+    }
+
+    /**
+     * 默认为所有线程池添加拦截器
+     * @param interceptor
+     * */
+    public void addPoolInterceptor(ThreadPoolInterceptor interceptor){
+        if(interceptor == null){
+            return;
+        }
+        List<ThreadPoolInterceptor> list = new ArrayList<>();
+        list.add(interceptor);
+        addPoolInterceptor(list);
+    }
+
+    /**
+     * 默认为所有线程池批量添加拦截器
+     * @param   intercepts
+     * */
+    public void addPoolInterceptor(List<ThreadPoolInterceptor> intercepts){
+        if(intercepts == null || intercepts.size() == 0){
+            return;
+        }
+        addPoolInterceptor(ThreadPoolConstant.DEFAULT_THREAD_INTERCEPTOR_ALL , intercepts);
+    }
+
+    /**
+     * 为指定线程池添加拦截器
+     * @param   interceptor
+     * */
+    public void addPoolInterceptor(String poolName , ThreadPoolInterceptor interceptor){
+        if(interceptor == null){
+            return;
+        }
+        List<ThreadPoolInterceptor> list = new ArrayList<>();
+        list.add(interceptor);
+        addPoolInterceptor(poolName , list);
+    }
+
+    /**
+     * 为指定线程池批量添加拦截器
+     * @param   intercepts
+     * */
+    public void addPoolInterceptor(String poolName , List<ThreadPoolInterceptor> intercepts){
+        if(StrUtil.isEmpty(poolName) || intercepts == null || intercepts.size() == 0){
+            return;
+        }
+        Set<String> poolNameSet = getThreadPoolNameSet();
+        for(String key : poolNameSet){
+            ThreadPoolExecutor executor = threadPoolMap.get(key);
+            doAddPoolIntercepts(poolName , executor , intercepts);
+        }
+    }
+
+    /**
+     * 将拦截器添加到线程池实例List中
+     *
+     * @param   poolName
+     * @param   executor
+     * @param   intercepts
+     * */
+    private void doAddPoolIntercepts(String poolName , ThreadPoolExecutor executor , List<ThreadPoolInterceptor> intercepts){
+        if(executor == null || intercepts == null){
+            return;
+        }
+        if(executor instanceof AbstractThreadPoolExecutor){
+            AbstractThreadPoolExecutor poolExecutor = (AbstractThreadPoolExecutor)executor;
+            Map<String , List<ThreadPoolInterceptor>> interceptors = poolExecutor.getInterceptors();
+            //如果已经存在key-value则直接addAll
+            if( interceptors.containsKey(poolName) ){
+                interceptors.get(poolName).addAll(intercepts);
+            }else{
+                interceptors.put(poolName , intercepts);
+            }
+        }else{
+
+        }
     }
 }
 

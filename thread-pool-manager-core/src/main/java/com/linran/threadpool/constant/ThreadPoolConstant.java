@@ -26,4 +26,6 @@ public class ThreadPoolConstant {
     public static final String DEFAULT_THREAD_NAME_PREFIX = "pool-";
 
     public static final String DEFAULT_THREAD_NAME_SUFFIX = "-thread-";
+
+    public static final String DEFAULT_THREAD_INTERCEPTOR_ALL = "THREAD-POOL-ALL";
 }

@@ -5,14 +5,34 @@ import com.linran.threadpool.constant.ThreadPoolConstant;
 import com.linran.threadpool.factory.pool.DefaultThreadPoolFactory;
 import com.linran.threadpool.factory.pool.ThreadPoolFactory;
 import com.linran.threadpool.handler.ThreadPoolHolder;
+import com.linran.threadpool.interceptor.ThreadPoolInterceptor;
 import com.linran.threadpool.properties.ThreadPoolManagerProperties;
 import com.linran.threadpool.util.ThreadPoolManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.config.BeanDefinitionHolder;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.util.StringUtils;
 
+import java.beans.FeatureDescriptor;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @Author LinRan
@@ -20,7 +40,14 @@ import java.util.stream.Collectors;
  */
 @Configuration
 @EnableConfigurationProperties(ThreadPoolManagerProperties.class)
-public class ThreadPoolManagerAutoConfig {
+public class ThreadPoolManagerAutoConfig implements BeanPostProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(ThreadPoolManagerAutoConfig.class);
+
+    /**
+     * 扫描拦截器链
+     * */
+    private Map<String , List<ThreadPoolInterceptor>> interceptsRegister = new ConcurrentHashMap<>();
 
     @Bean
     public ThreadPoolManager getThreadPoolManager(ThreadPoolManagerProperties properties){
@@ -61,6 +88,20 @@ public class ThreadPoolManagerAutoConfig {
         return manager;
     }
 
+    @Bean
+    public AutoConfiguredInterceptorScannerRegistrar getScannerRegistrar(BeanDefinitionRegistry registry){
+
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        //拦截扫描所有的拦截器
+        if(bean.getClass().isAnnotationPresent( com.linran.threadpool.annotation.ThreadPoolInterceptor.class )){
+
+        }
+        return BeanPostProcessor.super.postProcessAfterInitialization(bean, beanName);
+    }
+
     /**
      *  解析配置返回线程池工厂
      * @param   pools
@@ -92,5 +133,55 @@ public class ThreadPoolManagerAutoConfig {
             }
         }
         return list;
+    }
+
+    public static class AutoConfiguredInterceptorScannerRegistrar extends ClassPathBeanDefinitionScanner implements BeanFactoryAware {
+
+        private BeanFactory beanFactory;
+
+        public AutoConfiguredInterceptorScannerRegistrar(BeanDefinitionRegistry registry) {
+            super(registry);
+        }
+
+        @Override
+        protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
+            Set<BeanDefinitionHolder> definitionHolders = super.doScan(basePackages);
+
+            return definitionHolders;
+        }
+
+        public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+            if (!AutoConfigurationPackages.has(this.beanFactory)) {
+                log.debug("Could not determine auto-configuration package, automatic mapper scanning disabled.");
+            } else {
+                log.debug("Searching for mappers annotated with @ThreadPoolInterceptor");
+                List<String> packages = AutoConfigurationPackages.get(this.beanFactory);
+                if (log.isDebugEnabled()) {
+                    packages.forEach((pkg) -> {
+                        log.debug("Using auto-configuration base package '{}'", pkg);
+                    });
+                }
+
+                /*BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
+                builder.addPropertyValue("processPropertyPlaceHolders", true);
+                builder.addPropertyValue("annotationClass", Mapper.class);
+                builder.addPropertyValue("basePackage", StringUtils.collectionToCommaDelimitedString(packages));
+                BeanWrapper beanWrapper = new BeanWrapperImpl(MapperScannerConfigurer.class);
+                Set<String> propertyNames = (Set) Stream.of(beanWrapper.getPropertyDescriptors()).map(FeatureDescriptor::getName).collect(Collectors.toSet());
+                if (propertyNames.contains("lazyInitialization")) {
+                    builder.addPropertyValue("lazyInitialization", "${mybatis.lazy-initialization:false}");
+                }
+
+                if (propertyNames.contains("defaultScope")) {
+                    builder.addPropertyValue("defaultScope", "${mybatis.mapper-default-scope:}");
+                }
+
+                registry.registerBeanDefinition(MapperScannerConfigurer.class.getName(), builder.getBeanDefinition());*/
+            }
+        }
+
+        public void setBeanFactory(BeanFactory beanFactory) {
+            this.beanFactory = beanFactory;
+        }
     }
 }

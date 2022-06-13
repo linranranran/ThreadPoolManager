@@ -1,11 +1,12 @@
 package com.linran.threadpool.factory.pool;
 
+import com.linran.threadpool.constant.ThreadPoolConstant;
 import com.linran.threadpool.interceptor.ThreadPoolInterceptor;
 import com.linran.threadpool.task.AbstractRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,7 +38,7 @@ public abstract class AbstractThreadPoolExecutor extends ThreadPoolExecutor {
     /**
      * 拦截器链
      * */
-    private LinkedList<ThreadPoolInterceptor> interceptors = new LinkedList();
+    private Map<String , List<ThreadPoolInterceptor>> interceptors = new ConcurrentHashMap<>();
 
     /**
      * 当前线程池名称
@@ -187,8 +188,14 @@ public abstract class AbstractThreadPoolExecutor extends ThreadPoolExecutor {
             runnable.setStartTime(System.currentTimeMillis());
             log.info(t.getName() + " start execute task, task nums : " + runnable.getTaskNums() + ",start time : " + runnable.getStartTime());
 
-            for (ThreadPoolInterceptor interceptor : interceptors) {
-                interceptor.beforeRun(this,runnable , t);
+            //只有"ALL"或者当前线程池实例为指定poolName时执行
+            Set<String> keySet = interceptors.keySet();
+            for(String key : keySet){
+                if(ThreadPoolConstant.DEFAULT_THREAD_INTERCEPTOR_ALL.equals(key) || this.getName().equals(key)){
+                    for ( ThreadPoolInterceptor interceptor : interceptors.get(key)) {
+                        interceptor.beforeRun(this,runnable , t);
+                    }
+                }
             }
         }
     }
@@ -245,8 +252,15 @@ public abstract class AbstractThreadPoolExecutor extends ThreadPoolExecutor {
             AbstractRunnable runnable = (AbstractRunnable) r;
             runnable.setEndTime(System.currentTimeMillis());
             log.info(Thread.currentThread().getName() + " execute task end, task nums : "+ runnable.getTaskNums() +",end time : " + runnable.getEndTime());
-            for (ThreadPoolInterceptor interceptor : interceptors) {
-                interceptor.afterRun(this, runnable , t);
+
+            //只有"ALL"或者当前线程池实例为指定poolName时执行
+            Set<String> keySet = interceptors.keySet();
+            for(String key : keySet){
+                if(ThreadPoolConstant.DEFAULT_THREAD_INTERCEPTOR_ALL.equals(key) || this.getName().equals(key)){
+                    for ( ThreadPoolInterceptor interceptor : interceptors.get(key)) {
+                        interceptor.afterRun(this, runnable , t);
+                    }
+                }
             }
         }
     }
@@ -270,11 +284,11 @@ public abstract class AbstractThreadPoolExecutor extends ThreadPoolExecutor {
         }
     }
 
-    public LinkedList<ThreadPoolInterceptor> getInterceptors() {
+    public Map<String, List<ThreadPoolInterceptor>> getInterceptors() {
         return interceptors;
     }
 
-    public void setInterceptors(LinkedList<ThreadPoolInterceptor> interceptors) {
+    public void setInterceptors(Map<String, List<ThreadPoolInterceptor>> interceptors) {
         this.interceptors = interceptors;
     }
 
