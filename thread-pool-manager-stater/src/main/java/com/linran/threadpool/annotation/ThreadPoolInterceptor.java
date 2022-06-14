@@ -12,6 +12,6 @@ import java.lang.annotation.*;
 public @interface ThreadPoolInterceptor {
 
     /** 需要拦截的线程池名称，默认拦截所有的 */
-    String poolName();
+    String poolName() default "";
 
 }

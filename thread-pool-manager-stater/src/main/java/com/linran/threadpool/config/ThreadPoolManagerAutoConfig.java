@@ -21,11 +21,10 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.context.annotation.*;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.util.StringUtils;
 
 import java.beans.FeatureDescriptor;
@@ -39,6 +38,7 @@ import java.util.stream.Stream;
  * @Date 2022/6/1
  */
 @Configuration
+@Import({ThreadPoolManagerAutoConfig.AutoConfiguredInterceptorScannerRegistrar.class})
 @EnableConfigurationProperties(ThreadPoolManagerProperties.class)
 public class ThreadPoolManagerAutoConfig implements BeanPostProcessor {
 
@@ -88,16 +88,16 @@ public class ThreadPoolManagerAutoConfig implements BeanPostProcessor {
         return manager;
     }
 
-    @Bean
-    public AutoConfiguredInterceptorScannerRegistrar getScannerRegistrar(BeanDefinitionRegistry registry){
-
-    }
+//    @Bean
+//    public AutoConfiguredInterceptorScannerRegistrar getScannerRegistrar(BeanDefinitionRegistry registry){
+//
+//    }
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         //拦截扫描所有的拦截器
         if(bean.getClass().isAnnotationPresent( com.linran.threadpool.annotation.ThreadPoolInterceptor.class )){
-
+            log.info(beanName);
         }
         return BeanPostProcessor.super.postProcessAfterInitialization(bean, beanName);
     }
@@ -135,20 +135,24 @@ public class ThreadPoolManagerAutoConfig implements BeanPostProcessor {
         return list;
     }
 
-    public static class AutoConfiguredInterceptorScannerRegistrar extends ClassPathBeanDefinitionScanner implements BeanFactoryAware {
+    public static class AutoConfiguredInterceptorScannerRegistrar implements BeanFactoryAware,ImportBeanDefinitionRegistrar {
 
         private BeanFactory beanFactory;
 
-        public AutoConfiguredInterceptorScannerRegistrar(BeanDefinitionRegistry registry) {
-            super(registry);
+        public AutoConfiguredInterceptorScannerRegistrar(){
+
         }
 
-        @Override
-        protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
-            Set<BeanDefinitionHolder> definitionHolders = super.doScan(basePackages);
-
-            return definitionHolders;
-        }
+//        public AutoConfiguredInterceptorScannerRegistrar(BeanDefinitionRegistry registry) {
+//            super(registry);
+//        }
+//
+//        @Override
+//        protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
+//            Set<BeanDefinitionHolder> definitionHolders = super.doScan(basePackages);
+//
+//            return definitionHolders;
+//        }
 
         public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
             if (!AutoConfigurationPackages.has(this.beanFactory)) {
@@ -161,7 +165,13 @@ public class ThreadPoolManagerAutoConfig implements BeanPostProcessor {
                         log.debug("Using auto-configuration base package '{}'", pkg);
                     });
                 }
-
+                AutoConfiguredInterceptorScanner scanner = new AutoConfiguredInterceptorScanner(registry);
+                scanner.registerFilters();
+                Set<BeanDefinitionHolder> definition = null;
+                for(String str : packages){
+                    definition = scanner.doScan(str);
+                }
+                System.out.println(definition);
                 /*BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
                 builder.addPropertyValue("processPropertyPlaceHolders", true);
                 builder.addPropertyValue("annotationClass", Mapper.class);
@@ -182,6 +192,39 @@ public class ThreadPoolManagerAutoConfig implements BeanPostProcessor {
 
         public void setBeanFactory(BeanFactory beanFactory) {
             this.beanFactory = beanFactory;
+        }
+    }
+
+
+    public static class AutoConfiguredInterceptorScanner extends ClassPathBeanDefinitionScanner{
+
+        public AutoConfiguredInterceptorScanner(BeanDefinitionRegistry registry) {
+            super(registry ,false);
+        }
+
+        @Override
+        public Set<BeanDefinitionHolder> doScan(String... basePackages) {
+            Set<BeanDefinitionHolder> definitionHolders = super.doScan(basePackages );
+            return definitionHolders;
+        }
+
+        public void registerFilters() {
+            boolean acceptAllInterfaces = true;
+
+            // if specified, use the given annotation and / or marker interface
+            addIncludeFilter(new AnnotationTypeFilter(com.linran.threadpool.annotation.ThreadPoolInterceptor.class));
+            acceptAllInterfaces = false;
+
+            if (acceptAllInterfaces) {
+                // default include filter that accepts all classes
+                addIncludeFilter((metadataReader, metadataReaderFactory) -> true);
+            }
+
+            // exclude package-info.java
+            addExcludeFilter((metadataReader, metadataReaderFactory) -> {
+                String className = metadataReader.getClassMetadata().getClassName();
+                return className.endsWith("package-info");
+            });
         }
     }
 }
