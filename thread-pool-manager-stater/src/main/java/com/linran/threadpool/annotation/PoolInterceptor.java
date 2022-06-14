@@ -9,7 +9,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface ThreadPoolInterceptor {
+public @interface PoolInterceptor {
 
     /** 需要拦截的线程池名称，默认拦截所有的 */
     String poolName() default "";
