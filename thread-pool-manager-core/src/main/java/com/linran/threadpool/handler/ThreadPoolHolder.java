@@ -1,19 +1,21 @@
 package com.linran.threadpool.handler;
 
 import cn.hutool.core.util.StrUtil;
+import com.linran.threadpool.config.ThreadPoolConfig;
 import com.linran.threadpool.constant.ThreadPoolAddType;
 import com.linran.threadpool.constant.ThreadPoolConstant;
 import com.linran.threadpool.exception.ThreadPoolNameNullException;
+import com.linran.threadpool.exception.ThreadPoolNotFoundException;
 import com.linran.threadpool.factory.pool.AbstractThreadPoolExecutor;
 import com.linran.threadpool.factory.pool.DefaultThreadPoolFactory;
 import com.linran.threadpool.factory.pool.ThreadPoolFactory;
 import com.linran.threadpool.factory.pool.ThreadPoolParameter;
+import com.linran.threadpool.interceptor.ThreadPoolInterceptor;
 import com.linran.threadpool.task.AbstractRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -42,15 +44,93 @@ public class ThreadPoolHolder {
 
     /** 保存线程池实例 */
     private Map<String , ThreadPoolExecutor> threadPoolMap = null;
-    /** 保存线程任务编号 */
-//    private Map<String , AtomicLong> taskNums = null;
+
+    /** 全局设置，如果找不到对应的设置则取ThreadPoolConstant中的默认值 */
+    private ThreadPoolConfig globalSet = null;
+
+    /** 全局默认线程池名称，如有设置则优先使用 */
+    private String defaultPoolName = ThreadPoolConstant.DEFAULT_POOL_NAME;
+
+    /** 拦截器链 */
+    private Map<String , List<ThreadPoolInterceptor>> intercepts = null;
+
+    /** 工作模式，false:全默认工作模式，true:自定义全局设置模式 */
+    private boolean workMode = false;
 
     public ThreadPoolHolder(){
+        //统一使用init初始化方法
+        init(null , null ,true);
+    }
+
+    /**
+     * 传入自定义全局设置Map，并会修改工作模式为ture，会优先获取自定义设置。
+     * */
+    public ThreadPoolHolder(ThreadPoolConfig globalSet){
+        init(globalSet ,null ,true);
+    }
+
+    /**
+     * 传入自定义全局设置Map，并会修改工作模式为ture，会优先获取自定义设置。
+     * */
+    public ThreadPoolHolder(ThreadPoolConfig globalSet , Map<String , List<ThreadPoolInterceptor>> intercepts){
+        init(globalSet ,intercepts ,true);
+    }
+
+
+    /**
+     * 传入自定义全局设置Map，并会修改工作模式为ture，会优先获取自定义设置。
+     * @param globalSet 全局设置
+     * @param isCreateDefault 是否初始化默认线程池,true表示默认创建，false表示不需要
+     * */
+    public ThreadPoolHolder(ThreadPoolConfig globalSet , Map<String , List<ThreadPoolInterceptor>> intercepts , boolean isCreateDefault){
+        init(globalSet ,intercepts , isCreateDefault);
+    }
+
+    /**
+     * 初始化方法
+     * @param   globalSet
+     * @param   isCreateDefault 是否初始化默认子流程，用于stater批量创建线程池
+     * */
+    public void init(ThreadPoolConfig globalSet , Map<String , List<ThreadPoolInterceptor>> intercepts , boolean isCreateDefault){
+        this.intercepts = intercepts;
+        this.globalSet = globalSet;
+        workMode = true;
         threadPoolMap = new ConcurrentHashMap<>();
-//        taskNums = new ConcurrentHashMap<>();
-//        taskNums.put(ThreadPoolConstant.DEFAULT_POOL_NAME , new AtomicLong(0));
-        ThreadPoolFactory factory = new DefaultThreadPoolFactory();
-        threadPoolMap.put(ThreadPoolConstant.DEFAULT_POOL_NAME , factory.createBasicThreadPoolInstance(ThreadPoolConstant.DEFAULT_POOL_NAME));
+        String defaultName = ThreadPoolConstant.DEFAULT_POOL_NAME;
+        String setDefaultName = globalSet.getPoolName();
+        if( setDefaultName != null && !"".equals(setDefaultName)){
+            defaultName = setDefaultName;
+        }
+        //defaultName最起码也是一个默认值
+        this.defaultPoolName = defaultName;
+        if(isCreateDefault){
+            ThreadPoolFactory factory = new DefaultThreadPoolFactory(this.defaultPoolName);
+            addThreadPool( defaultName , factory);
+        }
+    }
+
+    /**
+     *  将线程池放入Map中，默认以如果name已存在则抛弃实例的方式添加
+     *  factory中poolName参数不能为空
+     * @param   factory     线程池工厂
+     * */
+    public void addThreadPool(ThreadPoolFactory factory){
+        if(factory == null || StrUtil.isEmpty(factory.getPoolName())){
+            throw new ThreadPoolNameNullException();
+        }
+        addThreadPool(factory.getPoolName() , factory.createBasicThreadPoolInstance() , ThreadPoolAddType.ABANDON_IF_EXIST);
+    }
+
+    /**
+     *  将线程池放入Map中，默认以如果name已存在则抛弃实例的方式添加
+     * @param poolName  线程池名称
+     * @param factory   线程池工厂
+     * */
+    public void addThreadPool(String poolName , ThreadPoolFactory factory){
+        if(StrUtil.isEmpty(poolName)){
+            throw new ThreadPoolNameNullException();
+        }
+        addThreadPool(poolName , factory.createBasicThreadPoolInstance() , ThreadPoolAddType.ABANDON_IF_EXIST);
     }
 
     /**
@@ -100,6 +180,10 @@ public class ThreadPoolHolder {
         }
         threadPoolMap.put(poolName , pool);
         resetThreadPoolTaskNums(poolName);
+        if(pool instanceof AbstractThreadPoolExecutor){
+            AbstractThreadPoolExecutor executor = (AbstractThreadPoolExecutor)pool;
+            executor.setInterceptors(this.intercepts);
+        }
     }
 
     /**
@@ -148,7 +232,7 @@ public class ThreadPoolHolder {
      * @return 任务编号
      * */
     public long executeTask(Runnable runnable){
-        return executeTask(ThreadPoolConstant.DEFAULT_POOL_NAME , runnable);
+        return executeTask(this.defaultPoolName , runnable);
     }
 
     /**
@@ -158,8 +242,11 @@ public class ThreadPoolHolder {
      * @return 任务编号
      * */
     public long executeTask(String poolName , Runnable runnable){
-        if( !threadPoolMap.containsKey(poolName) || threadPoolMap.get(poolName) == null){
+        if( poolName == null || StrUtil.isEmpty(poolName )){
             throw new ThreadPoolNameNullException("ThreadPoolName can not be null!");
+        }
+        if(threadPoolMap == null || !threadPoolMap.containsKey(poolName) ){
+            throw new ThreadPoolNotFoundException("ThreadPool not found!");
         }
         threadPoolMap.get(poolName).execute(runnable);
 //        return taskNums.get(poolName).getAndIncrement();
@@ -190,6 +277,9 @@ public class ThreadPoolHolder {
      *  @return set
      * */
     public Set<String> getThreadPoolNameSet(){
+        if(threadPoolMap == null || threadPoolMap.size() == 0){
+            throw new ThreadPoolNotFoundException("No ThreadPool !");
+        }
         return threadPoolMap.keySet();
     }
 
@@ -249,6 +339,92 @@ public class ThreadPoolHolder {
     public void shutDownThreadPool(String poolName){
         log.info(poolName + " shutdown , current active Thread : "+threadPoolMap.get(poolName).getActiveCount()+"");
         threadPoolMap.get(poolName).shutdown();
+    }
+
+    /**
+     * 初始化线程池添加拦截器
+     * @param intercepts
+     * */
+    public void initPoolInterceptor(Map<String , List<ThreadPoolInterceptor>> intercepts){
+        this.intercepts = intercepts;
+    }
+
+
+    /**
+     * 默认为所有线程池添加拦截器
+     * @param interceptor
+     * */
+    public void addPoolInterceptor(ThreadPoolInterceptor interceptor){
+        if(interceptor == null){
+            return;
+        }
+        List<ThreadPoolInterceptor> list = new ArrayList<>();
+        list.add(interceptor);
+        addPoolInterceptor(list);
+    }
+
+    /**
+     * 默认为所有线程池批量添加拦截器
+     * @param   intercepts
+     * */
+    public void addPoolInterceptor(List<ThreadPoolInterceptor> intercepts){
+        if(intercepts == null || intercepts.size() == 0){
+            return;
+        }
+        addPoolInterceptor(ThreadPoolConstant.DEFAULT_THREAD_INTERCEPTOR_ALL , intercepts);
+    }
+
+    /**
+     * 为指定线程池添加拦截器
+     * @param   interceptor
+     * */
+    public void addPoolInterceptor(String poolName , ThreadPoolInterceptor interceptor){
+        if(interceptor == null){
+            return;
+        }
+        List<ThreadPoolInterceptor> list = new ArrayList<>();
+        list.add(interceptor);
+        addPoolInterceptor(poolName , list);
+    }
+
+    /**
+     * 为指定线程池批量添加拦截器
+     * @param   intercepts
+     * */
+    public void addPoolInterceptor(String poolName , List<ThreadPoolInterceptor> intercepts){
+        if(StrUtil.isEmpty(poolName) || intercepts == null || intercepts.size() == 0){
+            return;
+        }
+        Set<String> poolNameSet = getThreadPoolNameSet();
+        for(String key : poolNameSet){
+            ThreadPoolExecutor executor = threadPoolMap.get(key);
+            doAddPoolIntercepts(poolName , executor , intercepts);
+        }
+    }
+
+    /**
+     * 将拦截器添加到线程池实例List中
+     *
+     * @param   poolName
+     * @param   executor
+     * @param   intercepts
+     * */
+    private void doAddPoolIntercepts(String poolName , ThreadPoolExecutor executor , List<ThreadPoolInterceptor> intercepts){
+        if(executor == null || intercepts == null){
+            return;
+        }
+        if(executor instanceof AbstractThreadPoolExecutor){
+            AbstractThreadPoolExecutor poolExecutor = (AbstractThreadPoolExecutor)executor;
+            Map<String , List<ThreadPoolInterceptor>> interceptors = poolExecutor.getInterceptors();
+            //如果已经存在key-value则直接addAll
+            if( interceptors.containsKey(poolName) ){
+                interceptors.get(poolName).addAll(intercepts);
+            }else{
+                interceptors.put(poolName , intercepts);
+            }
+        }else{
+
+        }
     }
 }
 

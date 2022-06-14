@@ -3,9 +3,12 @@ package com.linran.threadpool.util;
 import com.linran.threadpool.constant.ThreadPoolAddType;
 import com.linran.threadpool.factory.pool.ThreadPoolFactory;
 import com.linran.threadpool.handler.ThreadPoolHolder;
+import com.linran.threadpool.interceptor.ThreadPoolInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -50,7 +53,7 @@ public class ThreadPoolManager {
      * @param factory
      * */
     public void addPoolInstance(String poolName , ThreadPoolFactory factory){
-        holder.addThreadPool(poolName ,factory.createBasicThreadPoolInstance(poolName));
+        holder.addThreadPool(poolName ,factory.createBasicThreadPoolInstance());
     }
 
     /**
@@ -85,6 +88,38 @@ public class ThreadPoolManager {
      * */
     public void addPoolInstance(String poolName , ThreadPoolExecutor executor , ThreadPoolAddType type){
         holder.addThreadPool(poolName ,executor , type);
+    }
+
+    /**
+     * 默认为所有线程池添加拦截器
+     * @param interceptor
+     * */
+    public void addPoolInterceptor(ThreadPoolInterceptor interceptor){
+        holder.addPoolInterceptor(interceptor);
+    }
+
+    /**
+     * 默认为所有线程池批量添加拦截器
+     * @param intercepts
+     * */
+    public void addPoolInterceptor(List<ThreadPoolInterceptor> intercepts){
+        holder.addPoolInterceptor(intercepts);
+    }
+
+    /**
+     * 为指定线程池添加拦截器
+     * @param interceptor
+     * */
+    public void addPoolInterceptor(String poolName , ThreadPoolInterceptor interceptor){
+        holder.addPoolInterceptor(poolName , interceptor);
+    }
+
+    /**
+     * 为指定线程池批量添加拦截器
+     * @param intercepts
+     * */
+    public void addPoolInterceptor(String poolName , List<ThreadPoolInterceptor> intercepts){
+        holder.addPoolInterceptor(poolName , intercepts);
     }
 
     public ThreadPoolHolder getHolder() {

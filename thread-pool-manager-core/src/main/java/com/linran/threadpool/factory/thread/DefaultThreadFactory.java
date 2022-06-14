@@ -14,6 +14,12 @@ public class DefaultThreadFactory implements ThreadFactory {
     /** 线程编号计数器 */
     private AtomicInteger threadNums = new AtomicInteger(0);
 
+    /** 线程所属线程池名称 */
+    private String poolName = ThreadPoolConstant.DEFAULT_POOL_NAME;
+
+    public DefaultThreadFactory(String poolName){
+        this.poolName = poolName;
+    }
 
     @Override
     public Thread newThread(Runnable r) {
@@ -28,7 +34,7 @@ public class DefaultThreadFactory implements ThreadFactory {
     public String getThreadName(){
         StringBuffer name = new StringBuffer();
         name.append(ThreadPoolConstant.DEFAULT_THREAD_NAME_PREFIX);
-        name.append(ThreadPoolConstant.DEFAULT_POOL_NAME);
+        name.append(this.poolName);
         name.append(ThreadPoolConstant.DEFAULT_THREAD_NAME_SUFFIX);
         name.append(threadNums.getAndIncrement());
         return name.toString();
