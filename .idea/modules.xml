@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/thread-pool-manager.iml" filepath="$PROJECT_DIR$/.idea/thread-pool-manager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/thread-pool-manager.iml" filepath="$PROJECT_DIR$/thread-pool-manager.iml" />
       <module fileurl="file://$PROJECT_DIR$/thread-pool-manager-core/thread-pool-manager-core.iml" filepath="$PROJECT_DIR$/thread-pool-manager-core/thread-pool-manager-core.iml" />
       <module fileurl="file://$PROJECT_DIR$/thread-pool-manager-stater/thread-pool-manager-stater.iml" filepath="$PROJECT_DIR$/thread-pool-manager-stater/thread-pool-manager-stater.iml" />
       <module fileurl="file://$PROJECT_DIR$/thread-pool-manager-test/thread-pool-manager-test.iml" filepath="$PROJECT_DIR$/thread-pool-manager-test/thread-pool-manager-test.iml" />

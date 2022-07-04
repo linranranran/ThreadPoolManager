@@ -1,5 +1,5 @@
 #线程池相关
-linran:
+threadPoolManager:
   default-pool-name: linran
   global-set:
     core-size: 10

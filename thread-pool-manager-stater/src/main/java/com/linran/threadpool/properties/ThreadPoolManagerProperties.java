@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.Map;
 
 /**
- * linran:
+ * threadPoolManager:
  *
  *  --设置默认线程池name，如果手动设置了则默认线程池名称为该设置，但是参数仍可通过“default:”来设置。
  *  default-pool-name:xxxx
@@ -44,7 +44,7 @@ import java.util.Map;
  * @Author LinRan
  * @Date 2022/6/1
  */
-@ConfigurationProperties(prefix = "linran")
+@ConfigurationProperties(prefix = "threadPoolManager")
 @Data
 public class ThreadPoolManagerProperties {
 
