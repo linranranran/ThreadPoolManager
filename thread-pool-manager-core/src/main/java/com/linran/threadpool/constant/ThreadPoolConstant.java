@@ -9,10 +9,10 @@ import java.util.concurrent.TimeUnit;
 public class ThreadPoolConstant {
 
     public static final String DEFAULT_POOL_NAME = "default";
-
-    public static final int DEFAULT_POOL_CORE_THREAD_NUMS = 10;
-
-    public static final int DEFAULT_POOL_MAX_THREAD_NUMS = 20;
+    /** 核心线程数，默认为当前服务器cpu核心数量的两倍 */
+    public static final int DEFAULT_POOL_CORE_THREAD_NUMS = Runtime.getRuntime().availableProcessors() * 2;
+    /** 最大线程数，默认为当前服务器cpu核心数量的三倍 */
+    public static final int DEFAULT_POOL_MAX_THREAD_NUMS = Runtime.getRuntime().availableProcessors() * 3;
 
     public static final long DEFAULT_POOL_THREAD_KEEP_ALIVE_TIME = 30;
 
