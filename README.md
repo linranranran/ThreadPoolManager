@@ -115,6 +115,7 @@
 	//申明Holder类，用于统一存放线程池。
 	ThreadPoolHolder holder = new ThreadPoolHolder();  
 	//申明线程池管理类，用于调用核心方法。
+	ThreadPoolManager threadPoolManager = new ThreadPoolManager(holder);
 ```
 ### 拦截器
 1.	介绍：
